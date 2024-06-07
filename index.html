@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spinning Cube</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.110/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.110/examples/js/controls/OrbitControls.js"></script>
+  <script id="vertexShader" type="x-shader/x-vertex">
+    varying vec2 vUv;
+    void main()	{
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+    }
+</script>
+
+<script id="fragmentShader" type="x-shader/x-fragment">
+    varying vec2 vUv;
+    uniform sampler2D tDiffuse;
+    
+    const float lineThickness = 0.4;
+    const float gridSize = 80.0;
+
+    void main()	{
+
+        // the following technique (scaling uvs) is explained here: https://thebookofshaders.com/09/
+        vec2 st = fract( vUv * gridSize ); 
+
+        // determine at which coordinate the line is visible (indicated via 0 or 1)
+        vec2 gridLine = step( st, vec2( lineThickness ) );
+        float a = max( gridLine.x, gridLine.y );
+
+        vec4 baseColor = vec4( 0.0 ); // transparent base color
+        vec4 texColor = texture2D( tDiffuse, vUv );
+        
+        // a *= pow( gl_FragCoord.z, 500.0 ); // comment this line gradually remove the grid when coming closer
+
+        // blend both colors
+        gl_FragColor = mix( texColor, baseColor, a );
+
+    }
+</script>
+</head>
+<body>
+
+<div id="amp">
+
+</div>
+
+<customhtml><script> 
+    function changeColour() {   
+        var arrayColours = ["#BCFF84", "#FF73D6", "#9973FF", "#FFE280", "#FFAC60", "#70F9FF", "#FFFFFF"]
+       
+        function getRandomInt(max) {
+            return Math.floor(Math.random() * Math.floor(max));
+    }
+      
+        var elem = document.createElement('div');
+    elem.style = `position:absolute;width:100%;height:100%;opacity:1;z-index:2;background: ${arrayColours[getRandomInt(7)]}; mix-blend-mode: darken;`;
+        document.getElementById('amp').appendChild(elem);
+    }
+      
+    changeColour()
+    
+    </script></customhtml>
+
+
+<script>
+
+let camera, scene, renderer;
+
+init();
+animate();
+
+function init() {
+
+    camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.01, 10 );
+    camera.position.z = 1;
+
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(1,1.1,1)
+		
+		const loader = new THREE.TextureLoader();
+		const texture = loader.load( 'amp-logo-01.png' );
+
+    const geometry = new THREE.PlaneBufferGeometry( 2, 2);
+    const material = new THREE.ShaderMaterial( {
+			uniforms: {
+      	tDiffuse: {
+        	value: texture
+        }
+      },
+			vertexShader: document.getElementById( 'vertexShader' ).textContent,
+			fragmentShader: document.getElementById( 'fragmentShader' ).textContent,
+			transparent: true
+		} );
+
+    const mesh = new THREE.Mesh( geometry, material );
+    scene.add( mesh );
+
+    renderer = new THREE.WebGLRenderer( { antialias: true } );
+		renderer.setPixelRatio( window.devicePixelRatio );
+    renderer.setSize( window.innerWidth, window.innerHeight );
+    document.getElementById('amp').appendChild( renderer.domElement );
+		
+		const controls = new THREE.OrbitControls( camera, renderer.domElement );
+		
+}
+
+function animate() {
+
+    requestAnimationFrame( animate );
+    renderer.render( scene, camera );
+
+}
+</script>
+
+
+
+<!-- <script>
+
+//         // Set up the scene
+//         const scene = new THREE.Scene();
+//         scene.background = new THREE.Color(1,1.1,1)
+//         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+//         const renderer = new THREE.WebGLRenderer();
+//         renderer.setSize(window.innerWidth, window.innerHeight);
+//         document.getElementById('amp').appendChild(renderer.domElement);
+      
+//         // Position the camera
+//         camera.position.z = 1;
+      
+//         // Create a rotating cube
+//       const geometry = new THREE.BoxGeometry();
+//       const textureLoader = new THREE.TextureLoader();
+//       const materials = new THREE.MeshBasicMaterial({ map: textureLoader.load('amp-logo-01.png') });
+        
+     
+//       const cube = new THREE.Mesh(geometry, materials);
+//       scene.add(cube);
+
+
+//     //   const controls = new OrbitControls(camera, renderer.domElement);
+      
+      
+//     let q = 0
+//     animate();
+      
+//         // Animation loop
+//         function animate() {
+
+        
+
+//       cube.position.x=0.1*Math.sin(q+=0.02);      
+//       requestAnimationFrame(animate);
+//     //   cube.rotation.x += 0.01;
+//     //   cube.rotation.y += 0.01;
+//       renderer.render(scene, camera);
+//     //   controls.update();
+//       }
+      
+//       </script> -->
+
+</body>
+</html>
